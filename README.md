@@ -33,6 +33,8 @@ def main(..., dataset='MNIST', logger: Logger):
 In addition to the manual logs, `seml_logger` also dumps all parameters in a file called `config.json` within the Tensorboard directory.
 The config file is also logged in Tensorboard directly via the `Text` functionality.
 
+If the experiment crashes, i.e., the code returns with an exception or an error code != 0, the stacktrace is also logged via Tensorboard for easy access.
+
 Finally, the results of the experiments are stored via `pickle` in `results.pickle` within the logging directory.
 
 
