@@ -7,7 +7,7 @@ def traverse_tree(tree, path='', delimiter='/'):
             new_path = path+delimiter+k if len(path) > 0 else k
             for r in traverse_tree(v, new_path, delimiter):
                 yield r
-    elif isinstance(tree, list):
+    elif isinstance(tree, (list, tuple)):
         for i, v in enumerate(tree):
             new_path = path+delimiter+k if len(path) > 0 else k
             for r in traverse_tree(v, new_path, delimiter):
