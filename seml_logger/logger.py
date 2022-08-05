@@ -66,7 +66,7 @@ class Logger:
         )
 
     def delete(self):
-        self.writer.close()
+        self.close()
         path = os.path.abspath(self.folder_name)
         if len(path) < 40:
             logging.info('NOT DELETING BECAUSE THE FOLDER PATH IS ONLY 40 CHARACTERS!')

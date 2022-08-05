@@ -1,4 +1,5 @@
 import inspect
+import logging
 import traceback
 from typing import Iterable
 
@@ -32,6 +33,7 @@ def add_logger(naming_fn, default_naming=None, default_folder='./logs', subfolde
             if subfolder is None:
                 subfolder = db_collection
             logger = Logger(name=naming_fn(**config), naming=naming, config=config, folder=folder, subfolder=subfolder)
+            logging.info(f'TensorBoard: {logger.folder_name}')
             try:
                 result = fn(**kwargs, logger=logger)
                 # Store results with pickle
