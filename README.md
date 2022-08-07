@@ -11,7 +11,7 @@ pip install git+https://github.com/n-gao/seml_logger.git
 ### Initialization
 ```python
 from sacred import Experiment
-from seml_logger import add_logger, Logger
+from seml_logger import automain, Logger
 
 ex = Experiment()
 
@@ -23,8 +23,7 @@ def naming_fn(dataset, **_):
     # grab any of the main parameters to construct a fitting name.
     return dataset
 
-@ex.automain
-@add_logger(naming_fn)
+@automain(ex, naming_fn)
 def main(..., dataset='MNIST', logger: Logger):
     ...
 ```
