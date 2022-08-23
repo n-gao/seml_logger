@@ -28,6 +28,7 @@ def add_logger(experiment: Experiment, naming_fn, default_naming=None, default_f
                 folder: str = default_folder,
                 subfolder: str = subfolder,
                 db_collection: str = None,
+                print_progress: bool = False,
                 **kwargs):
             # To get the whole config we have to remove the additional params we got from the `add_logger` function
             config = locals()
@@ -47,7 +48,7 @@ def add_logger(experiment: Experiment, naming_fn, default_naming=None, default_f
             if subfolder is None:
                 subfolder = db_collection
             logger = Logger(name=naming_fn(**config), naming=naming,
-                            config=config, folder=folder, subfolder=subfolder)
+                            config=config, folder=folder, subfolder=subfolder, print_progress=print_progress)
             logging.info(f'TensorBoard: {logger.folder_name}')
 
             # Add logdir to MongoDB
@@ -78,14 +79,18 @@ def add_logger(experiment: Experiment, naming_fn, default_naming=None, default_f
 
 
 def automain(experiment: Experiment, naming_fn, default_naming=None, default_folder='./logs', subfolder=None):
-    annotate_fn = add_logger(experiment, naming_fn, default_naming, default_folder, subfolder)
+    annotate_fn = add_logger(experiment, naming_fn,
+                             default_naming, default_folder, subfolder)
+
     def annotate(fn):
         return experiment.automain(annotate_fn(fn))
     return annotate
 
 
 def main(experiment: Experiment, naming_fn, default_naming=None, default_folder='./logs', subfolder=None):
-    annotate_fn = add_logger(experiment, naming_fn, default_naming, default_folder, subfolder)
+    annotate_fn = add_logger(experiment, naming_fn,
+                             default_naming, default_folder, subfolder)
+
     def annotate(fn):
         return experiment.main(annotate_fn(fn))
     return annotate

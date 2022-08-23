@@ -1,5 +1,7 @@
 from seml.utils import flatten
 
+from tensorboardX.summary import hparams
+
 
 def traverse_tree(tree, path='', delimiter='/'):
     if isinstance(tree, dict):
@@ -22,6 +24,7 @@ def traverse_tree(tree, path='', delimiter='/'):
 def construct_suffix(config, naming, delimiter='_'):
     if naming is not None:
         flat_config = flatten(config)
+
         def to_name(x):
             if x not in flat_config:
                 return 'False'
@@ -34,3 +37,21 @@ def construct_suffix(config, naming, delimiter='_'):
     else:
         suffix = ''
     return suffix
+
+
+def add_hparams_inplace(writer, hparam_dict, metric_dict, global_step=None):
+    if not isinstance(hparam_dict, dict) or not isinstance(metric_dict, dict):
+        raise TypeError()
+    metric = {
+        f'result/{k}': v
+        for k, v in metric.items()
+    }
+
+    exp, ssi, sei = hparams(hparam_dict, metric_dict)
+
+    writer.file_writer.add_summary(exp)
+    writer.file_writer.add_summary(ssi)
+    writer.file_writer.add_summary(sei)
+    for k, v in metric.items():
+        writer.add_scalar(k, v, global_step)
+    writer._get_comet_logger().log_parameters(hparam_dict, step=global_step)
