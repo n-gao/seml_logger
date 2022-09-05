@@ -1,4 +1,5 @@
 import inspect
+from io import StringIO
 import logging
 import traceback
 from typing import Iterable
@@ -51,24 +52,31 @@ def add_logger(experiment: Experiment, naming_fn, default_naming=None, default_f
                             config=config, folder=folder, subfolder=subfolder, print_progress=print_progress)
             logging.info(f'TensorBoard: {logger.folder_name}')
 
+            # Capture all logging
+            stream = StringIO()
+            handler = logging.StreamHandler(stream)
+            logging.getLogger().addHandler(handler)
+
             # Add logdir to MongoDB
             observer = _get_mongodb_observer(experiment)
             if observer is not None:
                 if observer.run_entry is not None:
                     observer.run_entry['log_dir'] = logger.folder_name
                     observer.save()
-
+            
             # Actually run experiment
             try:
                 result = fn(**kwargs, logger=logger)
                 # Store results with pickle
                 logger.store_result(result)
+                logger.add_text('Log', f'```\n{stream.getvalue()}\n```')
                 logger.close()
                 return result
             except Exception as e:
                 # Store exception in tensorboard for easier debugging
                 logger.add_text(
                     'Exception', f'```\n{traceback.format_exc()}\n```')
+                logger.add_text('Log', f'```\n{stream.getvalue()}\n```')
                 logger.close()
                 raise e
         result = merge_args(fn)(func)
