@@ -75,8 +75,8 @@ class Logger:
             raise RuntimeError()
         self.prog.set_postfix(postfix)
 
-    def create_dataset(self, name, shape=None, dtype=None, data=None, **kwargs):
-        return self.h5py.create_dataset(name, shape, dtype, data, compression='gzip', **kwargs)
+    def create_dataset(self, name, shape=None, dtype=None, data=None, compression='gzip', **kwargs):
+        return self.h5py.create_dataset(name, shape, dtype, data, compression=compression, **kwargs)
 
     def log_distribution(self, data, path, n_bins=20, global_step=None):
         values = np.array(data)
