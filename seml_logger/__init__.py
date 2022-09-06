@@ -45,17 +45,17 @@ def add_logger(experiment: Experiment, naming_fn, default_naming=None, default_f
                 fn).args[::-1], inspect.getfullargspec(fn).defaults[::-1])}
             config = {**defaults, **config, **kwargs}
 
+            # Capture all logging
+            stream = StringIO()
+            handler = logging.StreamHandler(stream)
+            logging.getLogger().addHandler(handler)
+
             # Initialize logger
             if subfolder is None:
                 subfolder = db_collection
             logger = Logger(name=naming_fn(**config), naming=naming,
                             config=config, folder=folder, subfolder=subfolder, print_progress=print_progress)
             logging.info(f'TensorBoard: {logger.folder_name}')
-
-            # Capture all logging
-            stream = StringIO()
-            handler = logging.StreamHandler(stream)
-            logging.getLogger().addHandler(handler)
 
             # Add logdir to MongoDB
             observer = _get_mongodb_observer(experiment)
