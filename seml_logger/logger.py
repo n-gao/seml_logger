@@ -76,7 +76,7 @@ class Logger:
         self.prog.set_postfix(postfix)
 
     def create_dataset(self, name, shape=None, dtype=None, data=None, **kwargs):
-        return self.h5py.create_dataset(name, shape, dtype, data, **kwargs)
+        return self.h5py.create_dataset(name, shape, dtype, data, compression='gzip', **kwargs)
 
     def log_distribution(self, data, path, n_bins=20, global_step=None):
         values = np.array(data)
