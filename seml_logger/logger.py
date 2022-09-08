@@ -12,6 +12,7 @@ import tensorboardX
 import tqdm.auto as tqdm
 from numpy.distutils.misc_util import is_sequence
 from seml.utils import flatten
+from seml.json import NumpyEncoder
 
 from seml_logger.utils import add_hparams_inplace, construct_suffix, traverse_tree
 
@@ -108,6 +109,11 @@ class Logger:
             self.add_scalar(path, data.item(), global_step=global_step)
 
     def store_result(self, result):
+        try:
+            with open(os.path.join(self.folder_name, 'result.pickle'), 'wb') as out:
+                json.dump(result, out, cls=NumpyEncoder)
+        except TypeError as e:
+            logging.warn(str(e))
         with open(os.path.join(self.folder_name, 'result.pickle'), 'wb') as out:
             pickle.dump(result, out)
         if isinstance(result, dict):
