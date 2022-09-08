@@ -144,7 +144,7 @@ def add_default_observer_config(
             failed_text=(
                 f":x: {name} "
                 "failed after _{elapsed_time}_ with `{error}`.\n"
-                "```\n{fail_trace}\n```\n"
+                "```python\n{fail_trace}\n```\n"
             ),
             **_kwargs
         ))

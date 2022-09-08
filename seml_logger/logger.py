@@ -110,7 +110,7 @@ class Logger:
 
     def store_result(self, result):
         try:
-            with open(os.path.join(self.folder_name, 'result.pickle'), 'wb') as out:
+            with open(os.path.join(self.folder_name, 'result.json'), 'wb') as out:
                 json.dump(result, out, cls=NumpyEncoder)
         except TypeError as e:
             logging.warn(str(e))
