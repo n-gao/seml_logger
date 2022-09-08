@@ -115,11 +115,14 @@ def add_default_observer_config(
         **kwargs):
     # We must use a global variable here due to the way sacred handles the configuration function.
     # It is only evaluated with the current global variables.
-    global _ex
-    _ex = experiment
+    kwargs = {**locals(), **kwargs}
+    del kwargs['experiment']
+    del kwargs['kwargs']
+    global _kwargs, _ex
+    _kwargs, _ex = kwargs, experiment
 
     def observer_config():
-        global _ex
+        global _ex, _kwargs
         overwrite = None
         db_collection = None
 
@@ -143,14 +146,13 @@ def add_default_observer_config(
                 "failed after _{elapsed_time}_ with `{error}`.\n"
                 "```\n{fail_trace}\n```\n"
             ),
-            notify_on_started=notify_on_started,
-            notify_on_completed=notify_on_completed,
-            notify_on_failed=notify_on_failed,
-            notify_on_interrupted=notify_on_interrupted,
-            **kwargs
+            **_kwargs
         ))
         if db_collection is not None:
             _ex.observers.append(seml.create_mongodb_observer(
                 db_collection, overwrite=overwrite))
-        del _ex  # Let's clean up the global variable
+        # Clean global variables
+        del _ex
+        del _kwargs
+    
     return _ex.config(observer_config)
