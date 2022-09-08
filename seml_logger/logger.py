@@ -125,4 +125,4 @@ class Logger:
         np.save(os.path.join(self.folder_name, filename), np.array(array))
 
     def store_dict(self, filename, **kwargs):
-        np.savez(os.path.join(self.folder_name, filename), **kwargs)
+        np.savez_compressed(os.path.join(self.folder_name, filename), **kwargs)

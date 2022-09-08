@@ -1,9 +1,10 @@
 import inspect
-from io import StringIO
 import logging
 import traceback
+from io import StringIO
 from typing import Iterable
 
+import seml
 from merge_args import merge_args
 from sacred import Experiment
 from sacred.observers import MongoObserver
@@ -56,6 +57,7 @@ def add_logger(experiment: Experiment, naming_fn, default_naming=None, default_f
             logger = Logger(name=naming_fn(**config), naming=naming,
                             config=config, folder=folder, subfolder=subfolder, print_progress=print_progress)
             logging.info(f'TensorBoard: {logger.folder_name}')
+            experiment.current_run.info = {'log_dir': logger.folder_name}
 
             # Add logdir to MongoDB
             observer = _get_mongodb_observer(experiment)
@@ -63,7 +65,7 @@ def add_logger(experiment: Experiment, naming_fn, default_naming=None, default_f
                 if observer.run_entry is not None:
                     observer.run_entry['log_dir'] = logger.folder_name
                     observer.save()
-            
+
             # Actually run experiment
             try:
                 result = fn(**kwargs, logger=logger)
@@ -102,3 +104,53 @@ def main(experiment: Experiment, naming_fn, default_naming=None, default_folder=
     def annotate(fn):
         return experiment.main(annotate_fn(fn))
     return annotate
+
+
+def add_default_observer_config(
+        experiment: Experiment,
+        notify_on_started=False,
+        notify_on_completed=True,
+        notify_on_failed=True,
+        notify_on_interrupted=False,
+        **kwargs):
+    # We must use a global variable here due to the way sacred handles the configuration function.
+    # It is only evaluated with the current global variables.
+    global _ex
+    _ex = experiment
+
+    def observer_config():
+        global _ex
+        overwrite = None
+        db_collection = None
+
+        name = "`{experiment[name]} ({config[db_collection]}:{_id})`"
+        _ex.observers.append(seml.create_mattermost_observer(
+            started_text=(
+                f":hourglass_flowing_sand: {name} "
+                "started on host `{host_info[hostname]}`."
+            ),
+            completed_text=(
+                f":white_check_mark: {name} "
+                "completed after _{elapsed_time}_ with result:\n"
+                "```json\n{result}\n````\n"
+            ),
+            interrupted_text=(
+                f":warning: {name} "
+                "interrupted after _{elapsed_time}_."
+            ),
+            failed_text=(
+                f":x: {name} "
+                "failed after _{elapsed_time}_ with `{error}`.\n"
+                "```\n{fail_trace}\n```\n"
+            ),
+            notify_on_started=notify_on_started,
+            notify_on_completed=notify_on_completed,
+            notify_on_failed=notify_on_failed,
+            notify_on_interrupted=notify_on_interrupted,
+            **kwargs
+        ))
+        if db_collection is not None:
+            _ex.observers.append(seml.create_mongodb_observer(
+                db_collection, overwrite=overwrite))
+        del _ex  # Let's clean up the global variable
+    return _ex.config(observer_config)
