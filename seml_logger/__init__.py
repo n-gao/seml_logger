@@ -1,15 +1,14 @@
 import inspect
 import logging
 import traceback
-from io import StringIO
 from typing import Iterable
 
 import seml
 from merge_args import merge_args
 from sacred import Experiment
-from sacred.observers import MongoObserver
 
 from seml_logger.logger import Logger
+from seml_logger.tensorboard_handler import TensorBoardHandler
 
 
 def add_logger(experiment: Experiment, naming_fn, default_naming=None, default_folder='./logs', subfolder=None):
@@ -39,16 +38,19 @@ def add_logger(experiment: Experiment, naming_fn, default_naming=None, default_f
                 fn).args[::-1], inspect.getfullargspec(fn).defaults[::-1])}
             config = {**defaults, **config, **kwargs}
 
-            # Capture all logging
-            stream = StringIO()
-            handler = logging.StreamHandler(stream)
-            logging.getLogger().addHandler(handler)
-
             # Initialize logger
             if subfolder is None:
                 subfolder = db_collection
             logger = Logger(name=naming_fn(**config), naming=naming,
                             config=config, folder=folder, subfolder=subfolder, print_progress=print_progress)
+
+            # Capture all logging
+            log = logging.getLogger()
+            handler = TensorBoardHandler(logger.writer)
+            handler.setFormatter(log.handlers[-1].formatter)
+            log.addHandler(handler)
+
+            # Emit logdir information
             logging.info(f'TensorBoard: {logger.folder_name}')
             experiment.current_run.info = {'log_dir': logger.folder_name}
 
@@ -57,14 +59,12 @@ def add_logger(experiment: Experiment, naming_fn, default_naming=None, default_f
                 result = fn(**kwargs, logger=logger)
                 # Store results with pickle
                 logger.store_result(result)
-                logger.add_text('Log', f'```\n{stream.getvalue()}\n```')
                 logger.close()
                 return result
             except Exception as e:
                 # Store exception in tensorboard for easier debugging
                 logger.add_text(
                     'Exception', f'```\n{traceback.format_exc()}\n```')
-                logger.add_text('Log', f'```\n{stream.getvalue()}\n```')
                 logger.close()
                 raise e
         result = merge_args(fn)(func)
