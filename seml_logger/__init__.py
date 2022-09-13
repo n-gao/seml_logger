@@ -12,13 +12,6 @@ from sacred.observers import MongoObserver
 from seml_logger.logger import Logger
 
 
-def _get_mongodb_observer(experiment: Experiment):
-    for obs in experiment.observers:
-        if isinstance(obs, MongoObserver):
-            return obs
-    return None
-
-
 def add_logger(experiment: Experiment, naming_fn, default_naming=None, default_folder='./logs', subfolder=None):
     def annotation(fn):
         if 'logger' not in inspect.signature(fn).parameters:
@@ -58,13 +51,6 @@ def add_logger(experiment: Experiment, naming_fn, default_naming=None, default_f
                             config=config, folder=folder, subfolder=subfolder, print_progress=print_progress)
             logging.info(f'TensorBoard: {logger.folder_name}')
             experiment.current_run.info = {'log_dir': logger.folder_name}
-
-            # Add logdir to MongoDB
-            observer = _get_mongodb_observer(experiment)
-            if observer is not None:
-                if observer.run_entry is not None:
-                    observer.run_entry['log_dir'] = logger.folder_name
-                    observer.save()
 
             # Actually run experiment
             try:
