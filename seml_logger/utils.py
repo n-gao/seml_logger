@@ -1,3 +1,7 @@
+import json
+import os
+import pickle
+
 from seml.utils import flatten
 
 from tensorboardX.summary import hparams
@@ -55,3 +59,15 @@ def add_hparams_inplace(writer, hparam_dict, metric_dict, global_step=None):
     for k, v in metric.items():
         writer.add_scalar(k, v, global_step)
     writer._get_comet_logger().log_parameters(hparam_dict, step=global_step)
+
+
+def get_config(path: str):
+    path = os.path.expandvars(os.path.expanduser(path))
+    with open(os.path.join(path, 'config.json')) as inp:
+        return json.load(inp)
+
+
+def get_result(path: str):
+    path = os.path.expandvars(os.path.expanduser(path))
+    with open(os.path.join(path, 'result.pickle'), 'rb') as inp:
+        return pickle.load(inp)
