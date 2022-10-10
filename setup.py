@@ -3,6 +3,7 @@ from setuptools import find_packages, setup
 install_requires = [
     'numpy',
     'seml',
+    'tensorboard',
     'tensorboardx',
     'merge_args'
 ]

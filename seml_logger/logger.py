@@ -81,10 +81,11 @@ class Logger:
 
     def log_distribution(self, data, path, n_bins=20, global_step=None):
         values = np.array(data)
-        bins = np.linspace(np.min(values), np.max(values), n_bins)
-        self.add_histogram(
-            path, bins=bins, values=values, global_step=global_step
-        )
+        if values.size > 0:
+            bins = np.linspace(np.min(values), np.max(values), n_bins)
+            self.add_histogram(
+                path, bins=bins, values=values, global_step=global_step
+            )
 
     def delete(self):
         self.close()

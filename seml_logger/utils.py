@@ -1,9 +1,11 @@
 import json
 import os
 import pickle
+import numpy as np
 
 from seml.utils import flatten
 
+from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 from tensorboardX.summary import hparams
 
 
@@ -71,3 +73,22 @@ def get_result(path: str):
     path = os.path.expandvars(os.path.expanduser(path))
     with open(os.path.join(path, 'result.pickle'), 'rb') as inp:
         return pickle.load(inp)
+
+
+def get_event_accumulator(path: str, size_guidance: dict = None):
+    # By default load only scalars
+    sizes = {
+        'scalars': 1_000_000,
+        'histograms': 0,
+        'compressedHistograms': 0,
+        'images': 0,
+        'audio': 0,
+        'tensors': 0
+    }
+    if size_guidance is not None:
+        sizes.update(size_guidance)
+    tb_runs = [os.path.join(path, f) for f in os.listdir(path) if '.tfevents' in f]
+    tb = tb_runs[np.argmax([os.path.getsize(p) for p in tb_runs])]
+    accumulator = EventAccumulator(tb, sizes)
+    accumulator.Reload()
+    return accumulator
