@@ -1,4 +1,5 @@
 import datetime
+import gzip
 import json
 import logging
 import os
@@ -110,13 +111,7 @@ class Logger:
             self.add_scalar(path, data.item(), global_step=global_step)
 
     def store_result(self, result):
-        try:
-            with open(os.path.join(self.folder_name, 'result.json'), 'wb') as out:
-                json.dump(result, out, cls=NumpyEncoder)
-        except TypeError as e:
-            logging.warn(str(e))
-        with open(os.path.join(self.folder_name, 'result.pickle'), 'wb') as out:
-            pickle.dump(result, out)
+        self.store_data('result', result, True, True)
         if isinstance(result, dict):
             try:
                 config = flatten(self.config)
@@ -127,8 +122,19 @@ class Logger:
                 add_hparams_inplace(self, config, result)
             except:
                 pass
+    
+    def store_data(self, filename, data, use_json=False, use_pickle=True):
+        if use_json:
+            try:
+                with gzip.open(os.path.join(self.folder_name, f'{filename}.json.gz'), 'wb') as out:
+                    json.dump(data, out, cls=NumpyEncoder)
+            except TypeError as e:
+                logging.warn(str(e))
+        if use_pickle:
+            with gzip.open(os.path.join(self.folder_name, f'{filename}.pickle.gz'), 'wb') as out:
+                pickle.dump(data, out)
 
-    def store_array(self, array, filename):
+    def store_array(self, filename, array):
         np.save(os.path.join(self.folder_name, filename), np.array(array))
 
     def store_dict(self, filename, **kwargs):
