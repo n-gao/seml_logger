@@ -1,6 +1,7 @@
 import json
 import os
 import pickle
+from typing import Mapping
 import numpy as np
 
 from seml.utils import flatten
@@ -10,7 +11,7 @@ from tensorboardX.summary import hparams
 
 
 def traverse_tree(tree, path='', delimiter='/'):
-    if isinstance(tree, dict):
+    if isinstance(tree, Mapping):
         for k, v in tree.items():
             new_path = path+delimiter+k if len(path) > 0 else k
             for r in traverse_tree(v, new_path, delimiter):
