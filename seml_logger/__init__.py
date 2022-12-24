@@ -11,7 +11,7 @@ from seml_logger.logger import Logger
 from seml_logger.tensorboard_handler import TensorBoardHandler
 
 
-def add_logger(experiment: Experiment, naming_fn, default_naming=None, default_folder='./logs', subfolder=None):
+def add_logger(experiment: Experiment, naming_fn, default_naming=None, default_folder='./logs', subfolder=None, default_aim_folder='~/aim'):
     def annotation(fn):
         if 'logger' not in inspect.signature(fn).parameters:
             raise ValueError(
@@ -23,6 +23,9 @@ def add_logger(experiment: Experiment, naming_fn, default_naming=None, default_f
                 subfolder: str = subfolder,
                 db_collection: str = None,
                 print_progress: bool = False,
+                use_tensorboard: bool = True,
+                use_aim: bool = True,
+                aim_folder: str = default_aim_folder,
                 **kwargs):
             # To get the whole config we have to remove the additional params we got from the `add_logger` function
             config = locals()
@@ -41,30 +44,42 @@ def add_logger(experiment: Experiment, naming_fn, default_naming=None, default_f
             # Initialize logger
             if subfolder is None:
                 subfolder = db_collection
-            logger = Logger(name=naming_fn(**config), naming=naming,
-                            config=config, folder=folder, subfolder=subfolder, print_progress=print_progress)
+            logger = Logger(
+                name=naming_fn(**config),
+                naming=naming,
+                config=config,
+                log_dir=folder,
+                experiment=subfolder,
+                print_progress=print_progress,
+                use_tensorboard=use_tensorboard,
+                use_aim=use_aim,
+                aim_folder=aim_folder
+            )
 
             # Capture all logging
             log = logging.getLogger()
-            handler = TensorBoardHandler(logger.writer)
+            handler = TensorBoardHandler(logger.tb_writer)
             handler.setFormatter(log.handlers[-1].formatter)
             log.addHandler(handler)
 
             # Emit logdir information
-            logging.info(f'TensorBoard: {logger.folder_name}')
-            experiment.current_run.info = {'log_dir': logger.folder_name}
+            logging.info(f'Log dir: {logger.log_dir}')
+            logging.info(f'Aim dir: {logger.aim_folder}')
+            experiment.current_run.info = {'log_dir': logger.log_dir, 'aim_dir': logger.aim_folder}
 
             # Actually run experiment
             try:
                 result = fn(**kwargs, logger=logger)
                 # Store results with pickle
                 logger.store_result(result)
+                logger.add_tag('success')
                 logger.close()
                 return result
             except Exception as e:
                 # Store exception in tensorboard for easier debugging
                 logger.add_text(
                     'Exception', f'```\n{traceback.format_exc()}\n```')
+                logger.add_tag('crashed')
                 logger.close()
                 raise e
         result = merge_args(fn)(func)
