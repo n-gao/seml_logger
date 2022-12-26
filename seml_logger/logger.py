@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 import datetime
 import gzip
 import json
@@ -5,7 +6,6 @@ import logging
 import os
 import pickle
 import shutil
-from typing import Any
 
 import aim
 import h5py
@@ -28,8 +28,7 @@ class Logger:
             name: str,
             naming: list = None,
             config: dict = None,
-            aim_folder: str = '.',
-            log_dir: str = './logs',
+            base_dir: str = './logs',
             experiment: str = None,
             print_progress: bool = False,
             use_tensorboard: bool = True,
@@ -40,8 +39,8 @@ class Logger:
         self.config = config
         if naming is not None:
             self.name = self.name + construct_suffix(config, naming)
-        self.log_dir = log_dir
-        self.aim_folder = aim_folder
+        self.base_dir = base_dir
+        self.log_dir = base_dir
         self.experiment = experiment
         self.use_tensorboard = use_tensorboard
         self.use_aim = use_aim
@@ -58,7 +57,7 @@ class Logger:
             os.makedirs(self.log_dir, exist_ok=True)
         
         if use_aim:
-            self.aim_run = aim.Run(repo=self.aim_folder, experiment=self.experiment)
+            self.aim_run = aim.Run(repo=self.base_dir, experiment=self.experiment)
             self.aim_run.name = self.name
 
         if config is not None:
@@ -76,6 +75,24 @@ class Logger:
         if self._h5py is None:
             raise RuntimeError("No h5py dataset has been created yet!")
         return self.h5py[index]
+
+    @contextmanager
+    def without_aim(self):
+        prev_value = self.use_aim
+        try:
+            self.use_aim = False
+            yield self
+        finally:
+            self.use_aim = prev_value
+
+    @contextmanager
+    def without_tensorboard(self):
+        prev_value = self.use_tensorboard
+        try:
+            self.use_tensorboard = False
+            yield self
+        finally:
+            self.use_tensorboard = prev_value
 
     @property
     def h5py(self):
