@@ -76,6 +76,7 @@ def add_logger(experiment: Experiment, naming_fn, default_naming=None, default_f
                 return result
             except Exception as e:
                 # Store exception in tensorboard for easier debugging
+                logging.error(traceback.format_exc())
                 logger.add_text(
                     'Exception', f'```\n{traceback.format_exc()}\n```')
                 logger.add_tag('crashed')
