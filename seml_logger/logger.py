@@ -29,6 +29,7 @@ class Logger:
             naming: list = None,
             config: dict = None,
             base_dir: str = './logs',
+            aim_repo: str = None,
             experiment: str = None,
             print_progress: bool = False,
             use_tensorboard: bool = True,
@@ -40,6 +41,7 @@ class Logger:
         if naming is not None:
             self.name = self.name + construct_suffix(config, naming)
         self.base_dir = base_dir
+        self.aim_repo = aim_repo if aim_repo is not None else self.base_dir
         self.log_dir = base_dir
         self.experiment = experiment
         self.use_tensorboard = use_tensorboard
@@ -57,7 +59,7 @@ class Logger:
             os.makedirs(self.log_dir, exist_ok=True)
         
         if use_aim:
-            self.aim_run = aim.Run(repo=self.base_dir, experiment=self.experiment)
+            self.aim_run = aim.Run(repo=self.aim_repo, experiment=self.experiment)
             self.aim_run.name = self.name
 
         if config is not None:

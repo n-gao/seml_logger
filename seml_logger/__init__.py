@@ -20,6 +20,7 @@ def add_logger(experiment: Experiment, naming_fn, default_naming=None, default_f
         def func(
                 naming: Iterable[str] = default_naming,
                 folder: str = default_folder,
+                aim_repo: str = None,
                 subfolder: str = subfolder,
                 db_collection: str = None,
                 print_progress: bool = False,
@@ -48,6 +49,7 @@ def add_logger(experiment: Experiment, naming_fn, default_naming=None, default_f
                 naming=naming,
                 config=config,
                 base_dir=folder,
+                aim_repo=aim_repo,
                 experiment=subfolder,
                 print_progress=print_progress,
                 use_tensorboard=use_tensorboard,
