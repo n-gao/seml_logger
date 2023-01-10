@@ -224,3 +224,8 @@ class Logger:
 
     def store_dict(self, filename, **kwargs):
         np.savez_compressed(os.path.join(self.log_dir, filename), **kwargs)
+    
+    def store_blob(self, filename, blob):
+        path = os.path.join(self.log_dir, filename)
+        with open(path, 'wb') as out:
+            out.write(blob)
