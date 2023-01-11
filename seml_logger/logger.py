@@ -207,6 +207,12 @@ class Logger:
                 add_hparams_inplace(self, config, result)
             except:
                 pass
+        if self.use_aim:
+            try:
+                # We convert to JSON and back to avoid storing non-native variables
+                self.aim_run['result'] = json.loads(json.dumps(result, cls=NumpyEncoder))
+            except TypeError as e:
+                logging.warn(str(e))
     
     def store_data(self, filename, data, use_json=False, use_pickle=True):
         if use_json:
