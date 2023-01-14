@@ -1,5 +1,6 @@
 from contextlib import contextmanager
 import datetime
+import functools
 import gzip
 import json
 import logging
@@ -200,11 +201,12 @@ class Logger:
         if isinstance(result, dict):
             try:
                 config = flatten(self.config)
-                result = flatten(result)
-                for k in result:
-                    if is_sequence(result[k]):
-                        result[k] = np.mean(result[k]).item()
-                add_hparams_inplace(self, config, result)
+                flat_result = flatten(result)
+                for k in flat_result:
+                    if is_sequence(flat_result[k]):
+                        flat_result[k] = np.mean(flat_result[k]).item()
+                with self.without_aim():
+                    add_hparams_inplace(self, config, flat_result)
             except:
                 pass
         if self.use_aim:
@@ -214,15 +216,18 @@ class Logger:
             except TypeError as e:
                 logging.warn(str(e))
     
-    def store_data(self, filename, data, use_json=False, use_pickle=True):
+    def store_data(self, filename, data, use_json=False, use_pickle=True, use_gzip=False):
+        open_fn = gzip.open if use_gzip else open
+        suffix = '.gz' if use_gzip else ''
         if use_json:
             try:
-                with gzip.open(os.path.join(self.log_dir, f'{filename}.json.gz'), 'wb') as out:
+                mode = 'wb' if use_gzip else 'w'
+                with open_fn(os.path.join(self.log_dir, f'{filename}.json{suffix}'), mode) as out:
                     json.dump(data, out, cls=NumpyEncoder)
             except TypeError as e:
                 logging.warn(str(e))
         if use_pickle:
-            with gzip.open(os.path.join(self.log_dir, f'{filename}.pickle.gz'), 'wb') as out:
+            with open_fn(os.path.join(self.log_dir, f'{filename}.pickle{suffix}'), 'wb') as out:
                 pickle.dump(data, out)
 
     def store_array(self, filename, array):
