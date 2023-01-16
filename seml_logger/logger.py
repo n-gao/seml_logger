@@ -73,6 +73,16 @@ class Logger:
             json.dump(config, out)
         self._h5py = None
         self.prog = None
+    
+    @property
+    def info_dict(self):
+        result = {
+            'log_dir': self.log_dir,
+            'name': self.name
+        }
+        if self.use_aim:
+            result['aim_hash'] = self.aim_run.hash
+        return result
 
     def __getitem__(self, index):
         if self._h5py is None:

@@ -63,8 +63,9 @@ def add_logger(experiment: Experiment, naming_fn, default_naming=None, default_f
             log.addHandler(handler)
 
             # Emit logdir information
-            logging.info(f'Log dir: {logger.log_dir}')
-            experiment.current_run.info = {'log_dir': logger.log_dir}
+            for key, value in logger.info_dict.items():
+                logging.info(f'{key}: {value}')
+            experiment.current_run.info = logger.info_dict
 
             # Actually run experiment
             try:
