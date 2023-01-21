@@ -217,7 +217,8 @@ class Logger:
                 self.add_distribution(data, path, step=step, context=context)
     
     def store_result(self, result):
-        self.log_dict(result, 'result', context={'subset': 'result'})
+        with self.without_aim():
+            self.log_dict(result, 'result', context={'subset': 'result'})
         self.store_data('result', result, True, True)
         if isinstance(result, dict):
             try:
