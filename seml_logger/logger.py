@@ -77,9 +77,14 @@ class Logger:
         if config is not None:
             if self.use_tensorboard:
                 self.tb_writer.add_text(
-                    'config', f'```\n{json.dumps(config, indent=2, sort_keys=True)}\n```')
+                    'config', f'```\n{json.dumps(config, indent=2, sort_keys=True)}\n```'
+                )
+                self.tb_writer.add_text(
+                    'info', f'```\n{json.dumps(self.info_dict, indent=2, ort_keys=True)}\n```'
+                )
             if self.use_aim:
                 self.aim_run['hparams'] = config
+                self.aim_run['info'] = self.info_dict
         with open(os.path.join(self.log_dir, 'config.json'), 'w') as out:
             json.dump(config, out)
         self._h5py = None
@@ -197,9 +202,13 @@ class Logger:
         for path, data in traverse_tree(tree, path):
             self.add_scalar(path, data.item(), step=step, context=context)
     
-    def add_figure(self, name, figure, step=None, context=None):
+    def add_figure(self, name, figure, step=None, context=None, use_plotly=True):
         if self.use_aim:
-            self.aim_run.track(aim.Image(figure), name, step=step, context=context)
+            if use_plotly:
+                obj = aim.Figure(figure)
+            else:
+                obj = aim.Image(figure)
+            self.aim_run.track(obj, name, step=step, context=context)
         if self.use_tensorboard:
             if context is not None and 'subset' in context:
                 name = context['subset'] + '/' + name

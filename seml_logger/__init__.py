@@ -9,6 +9,7 @@ from sacred import Experiment
 
 from seml_logger.logger import Logger
 from seml_logger.tensorboard_handler import TensorBoardHandler
+from seml_logger.utils import safe_call
 
 
 def add_logger(experiment: Experiment, naming_fn, default_naming=None, default_folder='./logs', subfolder=None):
@@ -45,7 +46,7 @@ def add_logger(experiment: Experiment, naming_fn, default_naming=None, default_f
             if subfolder is None:
                 subfolder = db_collection
             logger = Logger(
-                name=naming_fn(**config),
+                name=safe_call(naming_fn, **config),
                 naming=naming,
                 config=config,
                 base_dir=folder,
