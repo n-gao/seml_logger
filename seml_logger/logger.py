@@ -80,7 +80,7 @@ class Logger:
                     'config', f'```\n{json.dumps(config, indent=2, sort_keys=True)}\n```'
                 )
                 self.tb_writer.add_text(
-                    'info', f'```\n{json.dumps(self.info_dict, indent=2, ort_keys=True)}\n```'
+                    'info', f'```\n{json.dumps(self.info_dict, indent=2, sort_keys=True)}\n```'
                 )
             if self.use_aim:
                 self.aim_run['hparams'] = config
