@@ -1,6 +1,4 @@
-from contextlib import contextmanager
 import datetime
-import functools
 import gzip
 import json
 import logging
@@ -8,6 +6,7 @@ import os
 import pickle
 import shutil
 import time
+from contextlib import contextmanager
 
 import aim
 import h5py
@@ -15,10 +14,11 @@ import numpy as np
 import tensorboardX
 import tqdm.auto as tqdm
 from numpy.distutils.misc_util import is_sequence
-from seml.utils import flatten
 from seml.json import NumpyEncoder
+from seml.utils import flatten
 
-from seml_logger.utils import add_hparams_inplace, construct_suffix, traverse_tree
+from seml_logger.utils import (add_hparams_inplace, construct_suffix,
+                               traverse_tree)
 
 
 def _try_create_aim_run(repo, experiment, ntries=5):
@@ -82,9 +82,13 @@ class Logger:
                 self.tb_writer.add_text(
                     'info', f'```\n{json.dumps(self.info_dict, indent=2, sort_keys=True)}\n```'
                 )
+                self.tb_writer.add_text(
+                    'environ', f'```\n{json.dumps(dict(os.environ), indent=2, sort_keys=True)}\n```'
+                )
             if self.use_aim:
                 self.aim_run['hparams'] = config
                 self.aim_run['info'] = self.info_dict
+                self.aim_run['environ'] = dict(os.environ)
         with open(os.path.join(self.log_dir, 'config.json'), 'w') as out:
             json.dump(config, out)
         self._h5py = None
@@ -226,8 +230,8 @@ class Logger:
                 self.add_distribution(data, path, step=step, context=context)
     
     def store_result(self, result):
-        with self.without_aim():
-            self.log_dict(result, 'result', context={'subset': 'result'})
+        # with self.without_aim():
+        #     self.log_dict(result, 'result', context={'subset': 'result'})
         self.store_data('result', result, True, True)
         if isinstance(result, dict):
             try:
@@ -236,8 +240,8 @@ class Logger:
                 for k in flat_result:
                     if is_sequence(flat_result[k]):
                         flat_result[k] = np.mean(flat_result[k]).item()
-                with self.without_aim():
-                    add_hparams_inplace(self, config, flat_result)
+                # with self.without_aim():
+                #     add_hparams_inplace(self, config, flat_result)
             except:
                 pass
         if self.use_aim:

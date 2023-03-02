@@ -1,3 +1,4 @@
+from genericpath import exists
 import inspect
 import json
 import os
@@ -17,24 +18,24 @@ def get_experiments(path, return_incomplete=False):
     path = os.path.expanduser(path)
     path = os.path.expandvars(path)
     experiments = [os.path.join(path, f) for f in os.listdir(path)]
+    experiments = [
+        p
+        for p in experiments
+        if  os.path.exists(os.path.join(p, 'config.json'))
+        and (os.path.exists(os.path.join(p, 'result.json')) or return_incomplete)
+    ]
     result = []
     for experiment in tqdm.tqdm(experiments):
         cfg_file = os.path.join(experiment, 'config.json')
         result_file = os.path.join(experiment, 'result.json')
         result_pkl_file = os.path.join(experiment, 'result.pickle')
         exp = {}
-        if not os.path.exists(cfg_file):
-            continue
-        if not os.path.exists(result_file):
-            if not return_incomplete:
-                continue
+        if os.path.exists(result_pkl_file):
+            with open(result_pkl_file, 'rb') as inp:
+                exp['result'] = pickle.load(inp)
         else:
-            if os.path.exists(result_pkl_file):
-                with open(result_pkl_file, 'rb') as inp:
-                    exp['result'] = pickle.load(inp)
-            else:
-                with open(result_file) as inp:
-                    exp['result'] = json.load(inp)
+            with open(result_file) as inp:
+                exp['result'] = json.load(inp)
         with open(cfg_file) as inp:
             exp['config'] = json.load(inp)
         result.append(exp)
