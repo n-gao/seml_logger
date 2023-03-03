@@ -6,7 +6,8 @@ install_requires = [
     'seml',
     'tensorboard',
     'tensorboardx',
-    'merge_args'
+    'merge_args',
+    'plotly'
 ]
 
 
