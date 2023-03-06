@@ -204,7 +204,7 @@ class Logger:
 
     def add_scalar_dict(self, tree, path='', step=None, context=None):
         for path, data in traverse_tree(tree, path):
-            self.add_scalar(path, data.item(), step=step, context=context)
+            self.add_scalar(path, float(data), step=step, context=context)
     
     def add_figure(self, name, figure, step=None, context=None, use_plotly=True):
         if self.use_aim:
