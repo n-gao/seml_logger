@@ -209,7 +209,10 @@ class Logger:
     def add_figure(self, name, figure, step=None, context=None, use_plotly=True):
         if self.use_aim:
             if use_plotly:
-                obj = aim.Figure(figure)
+                try:
+                    obj = aim.Figure(figure)
+                except:
+                    self.add_figure(name, figure, step, context, False)
             else:
                 obj = aim.Image(figure)
             self.aim_run.track(obj, name, step=step, context=context)
