@@ -195,6 +195,7 @@ class Logger:
             self.add_distribution(data, path, n_bins=n_bins, step=step, context=context)
 
     def add_scalar(self, name, value, step=None, context=None):
+        value = float(value)
         if self.use_aim:
             self.aim_run.track(value, name, step=step, context=context)
         if self.use_tensorboard:

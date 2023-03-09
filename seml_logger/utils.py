@@ -140,6 +140,7 @@ def get_result(path: str):
 
 
 def get_event_accumulator(path: str, size_guidance: dict = None):
+    path = os.path.expandvars(os.path.expanduser(path))
     # By default load only scalars
     sizes = {
         'scalars': 1_000_000,
