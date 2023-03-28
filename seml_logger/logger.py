@@ -21,16 +21,6 @@ from seml_logger.utils import (add_hparams_inplace, construct_suffix,
                                traverse_tree)
 
 
-def _try_create_aim_run(repo, experiment, ntries=5):
-    try:
-        return aim.Run(repo=repo, experiment=experiment)
-    except Exception as e:
-        if ntries > 0:
-            time.sleep(1.0)
-            return _try_create_aim_run(repo, experiment, ntries - 1)
-        raise e
-
-
 class Logger:
     """Logger utility class.
     This is a wrapper around aim.Run and tensorboardX with utility functions to log distributions.
@@ -71,7 +61,7 @@ class Logger:
             os.makedirs(self.log_dir, exist_ok=True)
         
         if use_aim:
-            self.aim_run = _try_create_aim_run(self.aim_repo, self.experiment)
+            self.aim_run = aim.Run(self.aim_repo, self.experiment)
             self.aim_run.name = self.name
 
         if config is not None:
