@@ -61,7 +61,7 @@ class Logger:
             os.makedirs(self.log_dir, exist_ok=True)
         
         if use_aim:
-            self.aim_run = aim.Run(self.aim_repo, self.experiment)
+            self.aim_run = aim.Run(repo=self.aim_repo, experiment=self.experiment)
             self.aim_run.name = self.name
 
         if config is not None:
