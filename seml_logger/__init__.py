@@ -8,7 +8,6 @@ from merge_args import merge_args
 from sacred import Experiment
 
 from seml_logger.logger import Logger
-from seml_logger.tensorboard_handler import TensorBoardHandler
 from seml_logger.utils import safe_call
 
 
@@ -21,7 +20,6 @@ def add_logger(experiment: Experiment, naming_fn, default_naming=None, default_f
         def func(
                 naming: Iterable[str] = default_naming,
                 folder: str = default_folder,
-                aim_repo: str = None,
                 subfolder: str = subfolder,
                 db_collection: str = None,
                 print_progress: bool = False,
@@ -50,18 +48,11 @@ def add_logger(experiment: Experiment, naming_fn, default_naming=None, default_f
                 naming=naming,
                 config=config,
                 base_dir=folder,
-                aim_repo=aim_repo,
                 experiment=subfolder,
                 print_progress=print_progress,
                 use_tensorboard=use_tensorboard,
                 use_aim=use_aim
             )
-
-            # Capture all logging
-            log = logging.getLogger()
-            handler = TensorBoardHandler(logger.tb_writer)
-            handler.setFormatter(log.handlers[-1].formatter)
-            log.addHandler(handler)
 
             # Emit logdir information
             for key, value in logger.info_dict.items():

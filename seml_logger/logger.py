@@ -5,20 +5,18 @@ import logging
 import os
 import pickle
 import shutil
-import time
 from contextlib import contextmanager
+from functools import cached_property
 
-import aim
 import h5py
 import numpy as np
-import tensorboardX
 import tqdm.auto as tqdm
-from numpy.distutils.misc_util import is_sequence
 from seml.json import NumpyEncoder
-from seml.utils import flatten
 
-from seml_logger.utils import (add_hparams_inplace, construct_suffix,
-                               traverse_tree)
+from seml_logger.utils import construct_suffix, traverse_tree
+from seml_logger.watchers import Watcher
+from seml_logger.watchers.aim_watcher import AimWatcher
+from seml_logger.watchers.tensorboard_watcher import TensorBoardWatcher
 
 
 class Logger:
@@ -31,7 +29,6 @@ class Logger:
             naming: list = None,
             config: dict = None,
             base_dir: str = './logs',
-            aim_repo: str = None,
             experiment: str = None,
             print_progress: bool = False,
             use_tensorboard: bool = True,
@@ -43,55 +40,67 @@ class Logger:
         if naming is not None:
             self.name = self.name + construct_suffix(config, naming)
         self.base_dir = base_dir
-        self.aim_repo = aim_repo if aim_repo is not None else self.base_dir
-        self.log_dir = base_dir
+
         self.experiment = experiment
         self.use_tensorboard = use_tensorboard
         self.use_aim = use_aim
 
+        self.log_dir = base_dir
         if experiment is not None:
             self.log_dir = os.path.join(self.log_dir, self.experiment)
         self.run_name = f'{self.name}__{time_str}'
         self.log_dir = os.path.join(self.log_dir, self.run_name)
         self.log_dir = os.path.expanduser(self.log_dir)
+        os.makedirs(self.log_dir, exist_ok=True)
 
-        if use_tensorboard:
-            self.tb_writer = tensorboardX.SummaryWriter(self.log_dir)
-        else:
-            os.makedirs(self.log_dir, exist_ok=True)
-        
-        if use_aim:
-            self.aim_run = aim.Run(repo=self.aim_repo, experiment=self.experiment)
-            self.aim_run.name = self.name
+        self._watchers: list[Watcher] = []
+        if self.use_aim:
+            self._watchers.append(AimWatcher(
+                self.base_dir,
+                self.experiment,
+                self.name,
+                self.log_dir
+            ))
+        if self.use_tensorboard:
+            self._watchers.append(TensorBoardWatcher(
+                self.base_dir,
+                self.experiment,
+                self.name,
+                self.log_dir
+            ))
 
+        info_dict = {
+            'info': self.info_dict,
+            'environ': dict(os.environ)
+        }
         if config is not None:
-            if self.use_tensorboard:
-                self.tb_writer.add_text(
-                    'config', f'```\n{json.dumps(config, indent=2, sort_keys=True)}\n```'
-                )
-                self.tb_writer.add_text(
-                    'info', f'```\n{json.dumps(self.info_dict, indent=2, sort_keys=True)}\n```'
-                )
-                self.tb_writer.add_text(
-                    'environ', f'```\n{json.dumps(dict(os.environ), indent=2, sort_keys=True)}\n```'
-                )
-            if self.use_aim:
-                self.aim_run['hparams'] = config
-                self.aim_run['info'] = self.info_dict
-                self.aim_run['environ'] = dict(os.environ)
+            info_dict['hparams'] = config
+        for watcher in self.watchers:
+            watcher.add_config(info_dict)
         with open(os.path.join(self.log_dir, 'config.json'), 'w') as out:
             json.dump(config, out)
         self._h5py = None
         self.prog = None
     
     @property
+    def watchers(self) -> list[Watcher]:
+        result = []
+        for watcher in self._watchers:
+            if not self.use_aim and isinstance(watcher, AimWatcher):
+                continue
+            if not self.use_tensorboard and isinstance(watcher, TensorBoardWatcher):
+                continue
+            result.append(watcher)
+        return result
+    
+    @cached_property
     def info_dict(self):
         result = {
-            'log_dir': self.log_dir,
+            'log_dir': os.path.abspath(self.log_dir),
             'name': self.name
         }
-        if self.use_aim:
-            result['aim_hash'] = self.aim_run.hash
+        for watcher in self.watchers:
+            result = {**result, **watcher.info()}
         return result
 
     def __getitem__(self, index):
@@ -137,81 +146,48 @@ class Logger:
     def create_dataset(self, name, shape=None, dtype=None, data=None, compression='gzip', **kwargs):
         return self.h5py.create_dataset(name, shape, dtype, data, compression=compression, **kwargs)
 
-    def add_distribution(self, data, path, n_bins=64, step=None, context=None):
+    def add_distribution(self, path, data, step=None, context=None):
         values = np.array(data).reshape(-1)
         if values.size == 0:
             return
-        if self.use_aim:
-            self.aim_run.track(aim.Distribution(values), name=path, step=step, context=context)
-        if self.use_tensorboard:
-            if context is not None and 'subset' in context:
-                path = context['subset'] + '/' + path
-            bins = np.linspace(np.min(values), np.max(values), n_bins)
-            self.tb_writer.add_histogram(
-                path, bins=bins, values=values, global_step=step
-            )
+        for watcher in self.watchers:
+            watcher.add_distribution(path, values, step, context=context)
 
     def delete(self):
         self.close()
         path = os.path.abspath(self.log_dir)
-        if len(path) < 40:
-            logging.info(
-                'NOT DELETING BECAUSE THE FOLDER PATH IS ONLY 40 CHARACTERS!')
-        else:
-            shutil.rmtree(path)
+        shutil.rmtree(path)
 
     def close(self):
-        if self.use_tensorboard:
-            self.tb_writer.close()
-        if self.use_aim:
-            self.aim_run.close()
+        for watcher in self.watchers:
+            watcher.close()
         if self._h5py is not None:
             self._h5py.close()
     
     def add_tag(self, tag):
-        if self.use_aim:
-            self.aim_run.add_tag(tag)
+        for watcher in self.watchers:
+            watcher.add_tag(tag)
     
     def add_text(self, name, value, step=None, context=None):
-        if self.use_aim:
-            self.aim_run.track(aim.Text(value), name, step=step, context=context)
-        if self.use_tensorboard:
-            if context is not None and 'subset' in context:
-                name = context['subset'] + '/' + name
-            self.tb_writer.add_text(name, value, global_step=step)
+        for watcher in self.watchers:
+            watcher.add_text(name, value, step, context=context)
 
-    def add_distribution_dict(self, tree, path='', n_bins=64, step=None, context=None):
+    def add_distribution_dict(self, tree, path='', step=None, context=None):
         for path, data in traverse_tree(tree, path):
-            self.add_distribution(data, path, n_bins=n_bins, step=step, context=context)
+            self.add_distribution(path, data, step=step, context=context)
 
     def add_scalar(self, name, value, step=None, context=None):
         value = float(value)
-        if self.use_aim:
-            self.aim_run.track(value, name, step=step, context=context)
-        if self.use_tensorboard:
-            if context is not None and 'subset' in context:
-                name = context['subset'] + '/' + name
-            self.tb_writer.add_scalar(name, value, global_step=step)
+        for watcher in self.watchers:
+            watcher.add_scalar(name, value, step, context=context)
 
     def add_scalar_dict(self, tree, path='', step=None, context=None):
         for path, data in traverse_tree(tree, path):
             self.add_scalar(path, float(data), step=step, context=context)
     
-    def add_figure(self, name, figure, step=None, context=None, use_plotly=True):
-        if self.use_aim:
-            if use_plotly:
-                # it the matplotlib figure cannot be converted we store it as an image
-                try:
-                    obj = aim.Figure(figure)
-                except:
-                    return self.add_figure(name, figure, step, context, False)
-            else:
-                obj = aim.Image(figure)
-            self.aim_run.track(obj, name, step=step, context=context)
-        if self.use_tensorboard:
-            if context is not None and 'subset' in context:
-                name = context['subset'] + '/' + name
-            self.tb_writer.add_figure(name, figure, global_step=step)
+    def add_figure(self, name, figure, step=None, context=None):
+        for watcher in self.watchers:
+            watcher.add_figure(name, figure, step, context=context)
     
     def log_dict(self, tree, path='', step=None, context=None):
         for path, data in traverse_tree(tree, path):
@@ -222,29 +198,12 @@ class Logger:
             if data.size == 1:
                 self.add_scalar(path, data, step=step, context=context)
             else:
-                self.add_distribution(data, path, step=step, context=context)
+                self.add_distribution(path, data, step=step, context=context)
     
     def store_result(self, result):
-        # with self.without_aim():
-        #     self.log_dict(result, 'result', context={'subset': 'result'})
+        for watcher in self.watchers:
+            watcher.add_result(result)
         self.store_data('result', result, True, True)
-        if isinstance(result, dict):
-            try:
-                config = flatten(self.config)
-                flat_result = flatten(result)
-                for k in flat_result:
-                    if is_sequence(flat_result[k]):
-                        flat_result[k] = np.mean(flat_result[k]).item()
-                # with self.without_aim():
-                #     add_hparams_inplace(self, config, flat_result)
-            except:
-                pass
-        if self.use_aim:
-            try:
-                # We convert to JSON and back to avoid storing non-native variables
-                self.aim_run['result'] = json.loads(json.dumps(result, cls=NumpyEncoder))
-            except TypeError as e:
-                logging.warn(str(e))
     
     def store_data(self, filename, data, use_json=False, use_pickle=True, use_gzip=False):
         open_fn = gzip.open if use_gzip else open
