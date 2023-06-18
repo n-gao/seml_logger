@@ -1,7 +1,7 @@
 from setuptools import find_packages, setup
 
 install_requires = [
-    'aim',
+    'aim>=3.0, <4.0',
     'numpy',
     'seml',
     'tensorboard',
