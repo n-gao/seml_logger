@@ -5,6 +5,7 @@ import aim
 import numpy as np
 from seml.json import NumpyEncoder
 from seml.utils import json
+from seml_logger.utils import ignore_warnings
 
 from seml_logger.watchers.watcher import Watcher
 
@@ -28,7 +29,8 @@ class AimWatcher(Watcher):
 
     def add_figure(self, name: str, figure, step: int, context: Any):
         try:
-            value = aim.Figure(figure)
+            with ignore_warnings():
+                value = aim.Figure(figure)
         except:
             value = aim.Image(figure)
         self.track(name, value, step, context=context)

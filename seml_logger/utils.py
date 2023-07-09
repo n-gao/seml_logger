@@ -1,13 +1,15 @@
-from genericpath import exists
 import inspect
 import json
+import logging
 import os
 import pickle
+from contextlib import contextmanager
 from typing import Mapping
 
 import numpy as np
-import tqdm.auto as tqdm
 import seml
+import tqdm.auto as tqdm
+from genericpath import exists
 from seml.utils import flatten
 from tensorboard.backend.event_processing.event_accumulator import \
     EventAccumulator
@@ -165,3 +167,12 @@ def safe_call(fn, *args, **kwargs):
         k: v for k, v in kwargs.items()
         if k in params
     })
+
+
+@contextmanager
+def ignore_warnings():
+    root = logging.getLogger()
+    origin_level = root.getEffectiveLevel()
+    root.setLevel(logging.ERROR) # Or whatever you want
+    yield
+    root.setLevel(origin_level)
