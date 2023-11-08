@@ -1,6 +1,8 @@
 import inspect
 import logging
 import traceback
+import signal
+import sys
 from typing import Iterable
 
 import seml
@@ -9,6 +11,15 @@ from sacred import Experiment
 
 from seml_logger.logger import Logger
 from seml_logger.utils import safe_call
+
+
+def sigeterm_handler(_signo, _stack_frame):
+    # We have to use sys.exit here to ensure that an exception is raised
+    # in the main thread. This allows us to still cleanup our logger.
+    sys.exit(1)
+
+
+signal.signal(signal.SIGTERM, sigeterm_handler)
 
 
 def add_logger(experiment: Experiment, naming_fn, default_naming=None, default_folder='./logs', subfolder=None):
