@@ -1,14 +1,12 @@
-import functools
 import inspect
 import logging
 import traceback
-import signal
-import sys
 from typing import Iterable
 
 import seml
 from merge_args import merge_args
 from sacred import Experiment
+from seml.settings import SETTINGS
 
 from seml_logger.logger import Logger
 from seml_logger.utils import safe_call
@@ -123,27 +121,28 @@ def add_default_observer_config(
         db_collection = None
 
         name = "`{experiment[name]} ({config[db_collection]}:{_id})`"
-        _ex.observers.append(seml.create_mattermost_observer(
-            started_text=(
-                f":hourglass_flowing_sand: {name} "
-                "started on host `{host_info[hostname]}`."
-            ),
-            completed_text=(
-                f":white_check_mark: {name} "
-                "completed after _{elapsed_time}_ with result:\n"
-                "```json\n{result}\n````\n"
-            ),
-            interrupted_text=(
-                f":warning: {name} "
-                "interrupted after _{elapsed_time}_."
-            ),
-            failed_text=(
-                f":x: {name} "
-                "failed after _{elapsed_time}_ with `{error}`.\n"
-                "```python\n{fail_trace}\n```\n"
-            ),
-            **_kwargs
-        ))
+        if SETTINGS.OBSERVERS.MATTERMOST.WEBHOOK != "YOUR_WEBHOOK": # if we don't use the default value
+            _ex.observers.append(seml.create_mattermost_observer(
+                started_text=(
+                    f":hourglass_flowing_sand: {name} "
+                    "started on host `{host_info[hostname]}`."
+                ),
+                completed_text=(
+                    f":white_check_mark: {name} "
+                    "completed after _{elapsed_time}_ with result:\n"
+                    "```json\n{result}\n````\n"
+                ),
+                interrupted_text=(
+                    f":warning: {name} "
+                    "interrupted after _{elapsed_time}_."
+                ),
+                failed_text=(
+                    f":x: {name} "
+                    "failed after _{elapsed_time}_ with `{error}`.\n"
+                    "```python\n{fail_trace}\n```\n"
+                ),
+                **_kwargs
+            ))
         if db_collection is not None:
             _ex.observers.append(seml.create_mongodb_observer(
                 db_collection, overwrite=overwrite))
