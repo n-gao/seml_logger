@@ -7,7 +7,8 @@ install_requires = [
     'tensorboard',
     'tensorboardx',
     'merge_args',
-    'plotly'
+    'plotly',
+    'h5py'
 ]
 
 
