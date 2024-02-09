@@ -5,6 +5,7 @@ import logging
 import os
 import pickle
 import shutil
+import warnings
 from contextlib import contextmanager
 from functools import cached_property
 
@@ -12,11 +13,15 @@ import h5py
 import numpy as np
 import tqdm.rich as tqdm
 from seml.json import NumpyEncoder
+from tqdm import TqdmExperimentalWarning
 
 from seml_logger.utils import construct_suffix, traverse_tree
 from seml_logger.watchers import Watcher
 from seml_logger.watchers.aim_watcher import AimWatcher
 from seml_logger.watchers.tensorboard_watcher import TensorBoardWatcher
+
+
+warnings.filterwarnings("ignore", category=TqdmExperimentalWarning)
 
 
 class Logger:
