@@ -2,6 +2,7 @@ import inspect
 import logging
 import traceback
 from typing import Iterable
+from tqdm.contrib.logging import logging_redirect_tqdm
 
 import seml
 from merge_args import merge_args
@@ -63,7 +64,8 @@ def add_logger(experiment: Experiment, naming_fn, default_naming=None, default_f
 
             # Actually run experiment
             try:
-                result = fn(**kwargs, logger=logger)
+                with logging_redirect_tqdm():
+                    result = fn(**kwargs, logger=logger)
                 # Store results with pickle
                 logger.store_result(result)
                 logger.add_tag('success')
