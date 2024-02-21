@@ -21,8 +21,7 @@ def context_to_name(name, context):
     # Several characters are not supported by tensorbard
     result = result.replace(' ', '_')\
         .replace('#', '_')\
-        .replace('=', '_')\
-        .replace()
+        .replace('=', '_')
     return result
 
 
