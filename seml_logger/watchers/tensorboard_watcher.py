@@ -14,10 +14,16 @@ from seml_logger.watchers import Watcher
 def context_to_name(name, context):
     if context is None:
         return name
-    return '/'.join(
+    result = '/'.join(
         f'{path}_{val}'
         for path, val in traverse_tree(context)
     ) + f'/{name}'
+    # Several characters are not supported by tensorbard
+    result = result.replace(' ', '_')\
+        .replace('#', '_')\
+        .replace('=', '_')\
+        .replace()
+    return result
 
 
 class TensorBoardWatcher(Watcher):
