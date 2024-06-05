@@ -1,10 +1,10 @@
+import json
 import logging
 from typing import Any
 
 import aim
 import numpy as np
 from seml.json import NumpyEncoder
-from seml.utils import json
 from seml_logger.utils import ignore_warnings
 
 from seml_logger.watchers.watcher import Watcher
@@ -42,8 +42,7 @@ class AimWatcher(Watcher):
         # We convert to JSON and back to avoid storing non-native variables
         try:
             # We convert to JSON and back to avoid storing non-native variables
-            self.run['result'] = json.loads(
-                json.dumps(result, cls=NumpyEncoder))
+            self.run["result"] = json.loads(json.dumps(result, cls=NumpyEncoder))
         except TypeError as e:
             logging.warn(str(e))
 
@@ -55,11 +54,7 @@ class AimWatcher(Watcher):
         return self.run.add_tag(tag)
 
     def info(self):
-        return {
-            'aim': {
-                'hash': self.run.hash
-            }
-        }
+        return {"aim": {"hash": self.run.hash}}
 
     def close(self):
         self.run.close()
