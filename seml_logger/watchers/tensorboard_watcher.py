@@ -4,7 +4,10 @@ from typing import Any
 
 import numpy as np
 import tensorboardX
-from seml.utils.json import NumpyEncoder
+try:
+    from seml.utils.json import NumpyEncoder
+except ImportError:
+    from seml.json import NumpyEncoder
 from seml_logger.tensorboard_handler import TensorBoardHandler
 from seml_logger.utils import traverse_tree
 

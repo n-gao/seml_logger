@@ -11,7 +11,10 @@ from functools import cached_property
 import h5py
 import numpy as np
 import tqdm.auto as tqdm
-from seml.utils.json import NumpyEncoder
+try:
+    from seml.utils.json import NumpyEncoder
+except ImportError:
+    from seml.json import NumpyEncoder
 
 from seml_logger.utils import construct_suffix, traverse_tree
 from seml_logger.watchers import Watcher
