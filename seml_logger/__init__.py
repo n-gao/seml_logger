@@ -5,7 +5,7 @@ from typing import Iterable
 
 import seml
 from merge_args import merge_args
-from seml.experiment import Experiment
+from seml import Experiment
 from seml.settings import SETTINGS
 
 from seml_logger.logger import Logger
