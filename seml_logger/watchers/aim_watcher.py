@@ -4,7 +4,7 @@ from typing import Any
 
 import aim
 import numpy as np
-from seml.json import NumpyEncoder
+from seml.utils.json import NumpyEncoder
 from seml_logger.utils import ignore_warnings
 
 from seml_logger.watchers.watcher import Watcher
